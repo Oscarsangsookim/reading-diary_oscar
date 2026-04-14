@@ -1,0 +1,2316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>재나후 책으로 떠나는 모험기</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gamja+Flower&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            font-family: "Gamja Flower", cursive;
+            background-color: #FFF8F0;
+            color: #333;
+            overflow-x: hidden;
+            font-size: 18px;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: "Jua", cursive;
+        }
+
+        /* 색상 정의 */
+        :root {
+            --primary: #FFB347;
+            --secondary: #87CEEB;
+            --accent: #FF6B9D;
+            --background: #FFF8F0;
+            --success: #98D8A0;
+        }
+
+        /* 레이아웃 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 헤더 */
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(255, 179, 71, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 15px;
+        }
+
+        .user-avatar {
+            font-size: 30px;
+        }
+
+        /* 버튼 */
+        button, .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: "Gamja Flower", cursive;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #FF9D27;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 179, 71, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #6eb3d4;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #FF6B6B;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #E55555;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        /* 카드 */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        /* 프로필 카드 */
+        .profile-card {
+            text-align: center;
+            padding: 40px 20px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(255, 179, 71, 0.1), rgba(255, 107, 157, 0.1));
+            cursor: pointer;
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .profile-card:hover {
+            transform: translateY(-8px);
+            background: linear-gradient(135deg, rgba(255, 179, 71, 0.2), rgba(255, 107, 157, 0.2));
+        }
+
+        .avatar-large {
+            font-size: 80px;
+            margin-bottom: 15px;
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--success);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* 폼 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #E0E0E0;
+            border-radius: 8px;
+            font-family: "Gamja Flower", cursive;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 179, 71, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* 별점 */
+        .stars {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .star {
+            font-size: 40px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .star:hover {
+            transform: scale(1.2);
+        }
+
+        .star.filled {
+            color: var(--primary);
+        }
+
+        /* 통계 카드 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255, 179, 71, 0.15), rgba(255, 107, 157, 0.15));
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            border: 2px solid rgba(255, 179, 71, 0.3);
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* 리스트 */
+        .list-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .list-item {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 4px solid var(--primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .list-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .list-item-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .list-item-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+        }
+
+        /* 태그 */
+        .tag {
+            display: inline-block;
+            background: rgba(255, 179, 71, 0.2);
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        /* 네비게이션 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #E0E0E0;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #999;
+            text-decoration: none;
+            border: none;
+            background: none;
+            font-family: "Gamja Flower", cursive;
+            font-size: 14px;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            background: rgba(255, 179, 71, 0.1);
+        }
+
+        .nav-item:hover {
+            color: var(--primary);
+        }
+
+        /* 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        /* 스텝 폼 */
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .step-indicator {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .step-dot {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #E0E0E0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+
+        .step-dot.active {
+            background: var(--primary);
+        }
+
+        .step-dot.completed {
+            background: var(--success);
+        }
+
+        /* 빈 상태 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state-text {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+                padding-bottom: 80px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+
+            .user-info {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .list-container {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* 애니메이션 */
+        @keyframes confetti {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-500px) rotate(720deg); opacity: 0; }
+        }
+
+        .confetti {
+            position: fixed;
+            pointer-events: none;
+            animation: confetti 3s ease-out;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .form-buttons button {
+            flex: 1;
+        }
+
+        .character {
+            font-size: 60px;
+            margin: 20px 0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: "Gamja Flower", cursive;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .detail-view {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+        }
+
+        .detail-header {
+            border-bottom: 2px solid #E0E0E0;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .detail-title {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .detail-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .rating-display {
+            font-size: 24px;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .report-content {
+            margin: 30px 0;
+            line-height: 1.8;
+        }
+
+        .report-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .section-title {
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #E0E0E0;
+        }
+
+        .emoji-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: space-around;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+
+        .emoji-option {
+            font-size: 40px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .emoji-option:hover {
+            transform: scale(1.3);
+        }
+
+        .emoji-option.selected {
+            transform: scale(1.5);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            background: #E0E0E0;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            background: var(--success);
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .badge-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .badge-item {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            border: 2px solid #E0E0E0;
+        }
+
+        .badge-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .badge-name {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .badge-item.locked {
+            opacity: 0.5;
+        }
+
+        .genre-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .genre-btn {
+            padding: 15px;
+            background: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-family: "Gamja Flower", cursive;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .genre-btn:hover {
+            background: rgba(255, 179, 71, 0.1);
+        }
+
+        .genre-btn.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .genre-filter {
+            white-space: nowrap;
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .template-card {
+            padding: 20px;
+            background: #f9f9f9;
+            border: 2px solid #E0E0E0;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .template-card:hover {
+            background: rgba(255, 179, 71, 0.1);
+        }
+
+        .template-card.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .template-icon {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+
+        .template-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .emoji-feedback {
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 179, 71, 0.1);
+            border-radius: 12px;
+        }
+
+        .emoji-feedback-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        .emoji-feedback-text {
+            font-size: 18px;
+            color: var(--primary);
+        }
+
+        .preview-container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .switch-user-btn {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            border: 2px solid white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: "Gamja Flower", cursive;
+            font-size: 14px;
+        }
+
+        .switch-user-btn:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- 초기 화면 -->
+    <div id="userSelection" class="page active">
+        <div class="container" style="text-align: center; padding-top: 60px;">
+            <div style="font-size: 60px; margin-bottom: 20px;">📚</div>
+            <h1 style="font-size: 36px; margin-bottom: 30px; color: var(--primary);">재나후 책으로 떠나는 모험기</h1>
+            <p style="color: #666; margin-bottom: 40px;">어떤 책을 읽고 싶으신가요?</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; max-width: 800px; margin: 0 auto;">
+                <div class="profile-card" onclick="selectUser('jaena')">
+                    <div class="character">👧</div>
+                    <div class="profile-name">김재나</div>
+                    <div class="badge" id="badge-jaena">📖 책 0권</div>
+                </div>
+
+                <div class="profile-card" onclick="selectUser('jaehu')">
+                    <div class="character">👦</div>
+                    <div class="profile-name">김재후</div>
+                    <div class="badge" id="badge-jaehu">📖 책 0권</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 -->
+    <div id="dashboard" class="page">
+        <div class="header">
+            <h1>📚 재나후 책으로 떠나는 모험기</h1>
+            <div class="user-info">
+                <span class="user-avatar" id="userAvatar">👧</span>
+                <span id="userName">김재나</span>
+                <button class="switch-user-btn" onclick="showUserSelection()">전환</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div style="font-size: 30px;">📅</div>
+                    <div class="stat-label">이번 달</div>
+                    <div class="stat-number" id="monthBooks">0</div>
+                    <div class="stat-label">권</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 30px;">📖</div>
+                    <div class="stat-label">총 읽은 책</div>
+                    <div class="stat-number" id="totalBooks">0</div>
+                    <div class="stat-label">권</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 30px;">⭐</div>
+                    <div class="stat-label">평균 별점</div>
+                    <div class="stat-number" id="avgRating">0.0</div>
+                    <div class="stat-label">점</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 30px;">🏆</div>
+                    <div class="stat-label">인기 장르</div>
+                    <div class="stat-number" id="topGenre" style="font-size: 24px;">-</div>
+                </div>
+            </div>
+
+            <h2 style="margin: 30px 0 20px 0;">📝 최근 독후감</h2>
+            <div class="list-container" id="recentReports"></div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📚</div>
+                <div class="empty-state-text">아직 독후감이 없어요!</div>
+                <button class="btn btn-primary" onclick="showPage('newReport')">첫 독후감 작성하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 새 독후감 작성 -->
+    <div id="newReport" class="page">
+        <div class="container" style="padding-bottom: 100px;">
+            <h1 style="margin-bottom: 30px;">✍️ 새 독후감 작성</h1>
+
+            <div class="step-indicator">
+                <div class="step-dot active" data-step="1">1</div>
+                <div class="step-dot" data-step="2">2</div>
+                <div class="step-dot" data-step="3">3</div>
+                <div class="step-dot" data-step="4">4</div>
+                <div class="step-dot" data-step="5">5</div>
+            </div>
+
+            <!-- Step 1: 책 정보 -->
+            <div class="step active" data-step="1">
+                <h2>📖 책 정보</h2>
+                <div class="form-group">
+                    <label>책 제목 *</label>
+                    <input type="text" id="bookTitle" placeholder="예: 해리포터와 마법사의 돌">
+                </div>
+                <div class="form-group">
+                    <label>저자</label>
+                    <input type="text" id="bookAuthor" placeholder="예: J.K. 롤링">
+                </div>
+                <div class="form-group">
+                    <label>출판사</label>
+                    <input type="text" id="bookPublisher" placeholder="예: 문학수첩">
+                </div>
+                <div class="form-group">
+                    <label>도서 장르 *</label>
+                    <div class="genre-grid">
+                        <button class="genre-btn" onclick="selectGenre(this, '동화/명작')">📖 동화/명작</button>
+                        <button class="genre-btn" onclick="selectGenre(this, '판타지/모험')">🧚 판타지</button>
+                        <button class="genre-btn" onclick="selectGenre(this, '과학/자연')">🔬 과학</button>
+                        <button class="genre-btn" onclick="selectGenre(this, '수학/논리')">📐 수학</button>
+                        <button class="genre-btn" onclick="selectGenre(this, '사회/역사')">🌍 역사</button>
+                        <button class="genre-btn" onclick="selectGenre(this, '예술/음악')">🎨 예술</button>
+                        <button class="genre-btn" onclick="selectGenre(this, '학습만화')">📝 만화</button>
+                        <button class="genre-btn" onclick="selectGenre(this, '위인전')">👤 위인전</button>
+                        <button class="genre-btn" onclick="selectGenre(this, '동물/자연')">🐾 동물</button>
+                        <button class="genre-btn" onclick="selectGenre(this, '기타')">📚 기타</button>
+                    </div>
+                    <input type="hidden" id="bookGenre">
+                </div>
+            </div>
+
+            <!-- Step 2: 독서 기간 -->
+            <div class="step" data-step="2">
+                <h2>📅 독서 기간</h2>
+                <div class="form-group">
+                    <label>독서 시작일</label>
+                    <input type="date" id="readingStartDate">
+                </div>
+                <div class="form-group">
+                    <label>독서 완료일</label>
+                    <input type="date" id="readingEndDate">
+                </div>
+                <div style="background: rgba(255, 179, 71, 0.1); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                    <div id="readingDays" style="color: var(--primary); font-weight: bold;">날짜를 선택해주세요</div>
+                </div>
+            </div>
+
+            <!-- Step 3: 독후감 작성 -->
+            <div class="step" data-step="3">
+                <h2>🖊️ 독후감 작성</h2>
+                <div class="form-group">
+                    <label>독후감 작성일</label>
+                    <input type="date" id="reportDate" value="">
+                </div>
+                <div class="form-group">
+                    <label>템플릿 선택</label>
+                    <div class="template-grid">
+                        <div class="template-card selected" onclick="selectTemplate(this, 'basic')">
+                            <div class="template-icon">📖</div>
+                            <div class="template-name">기본형</div>
+                        </div>
+                        <div class="template-card" onclick="selectTemplate(this, 'emotion')">
+                            <div class="template-icon">💭</div>
+                            <div class="template-name">감정 일기</div>
+                        </div>
+                        <div class="template-card" onclick="selectTemplate(this, 'exploration')">
+                            <div class="template-icon">🔍</div>
+                            <div class="template-name">탐구형</div>
+                        </div>
+                        <div class="template-card" onclick="selectTemplate(this, 'creative')">
+                            <div class="template-icon">✨</div>
+                            <div class="template-name">창작형</div>
+                        </div>
+                        <div class="template-card" onclick="selectTemplate(this, 'mini')">
+                            <div class="template-icon">⭐</div>
+                            <div class="template-name">미니 독후감</div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="selectedTemplate" value="basic">
+                </div>
+                <div id="templateFields"></div>
+            </div>
+
+            <!-- Step 4: 별점 & 한줄평 -->
+            <div class="step" data-step="4">
+                <h2>⭐ 별점 & 한줄평</h2>
+                <div class="form-group">
+                    <label>만족도</label>
+                    <div class="stars" id="ratingStars">
+                        <span class="star" onclick="setRating(1)">⭐</span>
+                        <span class="star" onclick="setRating(2)">⭐</span>
+                        <span class="star" onclick="setRating(3)">⭐</span>
+                        <span class="star" onclick="setRating(4)">⭐</span>
+                        <span class="star" onclick="setRating(5)">⭐</span>
+                    </div>
+                    <div class="emoji-feedback">
+                        <div class="emoji-feedback-icon" id="ratingEmoji">🙂</div>
+                        <div class="emoji-feedback-text" id="ratingText">별점을 선택해주세요</div>
+                    </div>
+                    <input type="hidden" id="rating" value="0">
+                </div>
+                <div class="form-group">
+                    <label>한줄평 (50자 이내)</label>
+                    <textarea id="oneLiner" placeholder="이 책을 한 줄로 표현하면..."></textarea>
+                    <div style="font-size: 12px; color: #999; margin-top: 5px;">
+                        <span id="charCount">0</span>/50
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: 미리보기 & 저장 -->
+            <div class="step" data-step="5">
+                <h2>👀 미리보기 & 저장</h2>
+                <div class="preview-container" id="previewContainer"></div>
+            </div>
+
+            <div class="form-buttons" style="margin-top: 30px;">
+                <button class="btn btn-secondary" onclick="previousStep()" id="prevBtn" style="display: none;">이전</button>
+                <button class="btn btn-primary" onclick="nextStep()" id="nextBtn">다음</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 내 서재 -->
+    <div id="library" class="page">
+        <div class="container" style="padding-bottom: 100px;">
+            <h1 style="margin-bottom: 20px;">📚 <span id="libraryUserName"></span>의 서재</h1>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="filterLibrary('all', this)">전체</button>
+                <button class="tab-btn" onclick="filterLibrary('5', this)">⭐⭐⭐⭐⭐</button>
+                <button class="tab-btn" onclick="filterLibrary('4', this)">⭐⭐⭐⭐</button>
+                <button class="tab-btn" onclick="filterLibrary('3', this)">⭐⭐⭐</button>
+            </div>
+
+            <div class="list-container" id="libraryList"></div>
+
+            <div id="libraryEmpty" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📚</div>
+                <div class="empty-state-text">아직 독후감이 없어요!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 독후감 상세보기 -->
+    <div id="reportDetail" class="page">
+        <div class="container" style="padding-bottom: 100px;">
+            <button class="btn btn-secondary btn-small" onclick="showPage('library')" style="margin-bottom: 20px;">← 돌아가기</button>
+            <div class="detail-view" id="detailContent"></div>
+        </div>
+    </div>
+
+    <!-- 검색 -->
+    <div id="search" class="page">
+        <div class="container" style="padding-bottom: 100px;">
+            <h1 style="margin-bottom: 20px;">🔍 <span id="searchUserName"></span>의 검색</h1>
+
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="책 제목, 저자 검색...">
+                <button class="btn btn-primary" onclick="performSearch()">검색</button>
+            </div>
+
+            <div class="form-group">
+                <label>작성일 필터</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="date" id="searchStartDate" style="padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                    <span style="color: #999;">~</span>
+                    <input type="date" id="searchEndDate" style="padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>장르 필터</label>
+                <div class="genre-grid">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 5px; white-space: nowrap;">
+                        <input type="checkbox" class="genre-filter" value="동화/명작"> 📖 동화/명작
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 5px; white-space: nowrap;">
+                        <input type="checkbox" class="genre-filter" value="판타지/모험"> 🧚 판타지/모험
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 5px; white-space: nowrap;">
+                        <input type="checkbox" class="genre-filter" value="과학/자연"> 🔬 과학/자연
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 5px; white-space: nowrap;">
+                        <input type="checkbox" class="genre-filter" value="수학/논리"> 📐 수학/논리
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 5px; white-space: nowrap;">
+                        <input type="checkbox" class="genre-filter" value="사회/역사"> 🌍 사회/역사
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 5px; white-space: nowrap;">
+                        <input type="checkbox" class="genre-filter" value="예술/음악"> 🎨 예술/음악
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 5px; white-space: nowrap;">
+                        <input type="checkbox" class="genre-filter" value="학습만화"> 📝 학습만화
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 5px; white-space: nowrap;">
+                        <input type="checkbox" class="genre-filter" value="위인전"> 👤 위인전
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 5px; white-space: nowrap;">
+                        <input type="checkbox" class="genre-filter" value="동물/자연"> 🐾 동물/자연
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 5px; white-space: nowrap;">
+                        <input type="checkbox" class="genre-filter" value="기타"> 📚 기타
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>별점 필터</label>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" class="rating-filter" value="5"> ⭐⭐⭐⭐⭐
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" class="rating-filter" value="4"> ⭐⭐⭐⭐
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" class="rating-filter" value="3"> ⭐⭐⭐
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" class="rating-filter" value="2"> ⭐⭐
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" class="rating-filter" value="1"> ⭐
+                    </label>
+                </div>
+            </div>
+
+            <div class="list-container" id="searchResults"></div>
+
+            <div id="searchEmpty" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">🔍</div>
+                <div class="empty-state-text">검색 결과가 없어요</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 통계 -->
+    <div id="stats" class="page">
+        <div class="container" style="padding-bottom: 100px;">
+            <h1 style="margin-bottom: 30px;">📊 <span id="statsUserName"></span>의 통계</h1>
+
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">📈 월간 독서 목표</h2>
+                <div class="form-group">
+                    <label>월간 목표 (권)</label>
+                    <input type="number" id="monthlyGoal" min="1" max="100" value="5">
+                    <button class="btn btn-primary btn-small" onclick="setGoal('monthly')" style="margin-top: 10px;">설정</button>
+                </div>
+                <div id="monthlyProgress"></div>
+            </div>
+
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">🏆 뱃지</h2>
+                <div class="badge-showcase" id="badgeShowcase"></div>
+            </div>
+
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">📊 별점 분포</h2>
+                <div id="ratingChart"></div>
+            </div>
+
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">📚 장르 분포</h2>
+                <div id="genreChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 네비게이션 -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="showPage('dashboard')">🏠 홈</button>
+        <button class="nav-item" onclick="showPage('newReport')">✍️ 작성</button>
+        <button class="nav-item" onclick="showPage('library')">📚 서재</button>
+        <button class="nav-item" onclick="showPage('search')">🔍 검색</button>
+        <button class="nav-item" onclick="showPage('stats')">📊 통계</button>
+    </div>
+
+    <script>
+        // ===== Google Drive API 설정 =====
+        const CLIENT_ID = '33639410862-0bv97rceoh511nvdo75f5a7vi3fv48kb.apps.googleusercontent.com';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        let gapiInited = false;
+        let gisInited = false;
+        let tokenClient;
+        let accessToken = null;
+        const FILE_NAME = 'reading-diary-data.json';
+
+        // Google API 초기화
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            await gapi.client.init({
+                apiKey: '', // 필요 없음
+                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+            });
+            gapiInited = true;
+            maybeEnableButtons();
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.id.initialize({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: handleAuthorizationCode,
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                // 초기화 완료
+            }
+        }
+
+        async function handleAuthorizationCode(response) {
+            if (response.code) {
+                accessToken = response.code;
+                // 실제 토큰 교환은 여기서 이루어짐
+                await exchangeCodeForToken(response.code);
+            }
+        }
+
+        async function exchangeCodeForToken(code) {
+            try {
+                // 간단한 방식: Google Drive API 직접 사용
+                // 토큰 자동 갱신
+                if (gapi.client.getToken()) {
+                    accessToken = gapi.client.getToken().access_token;
+                }
+            } catch (error) {
+                console.error('Token exchange error:', error);
+            }
+        }
+
+        // Google 로그인 (암시적 흐름)
+        function initializeGoogleAuth() {
+            tokenClient = google.accounts.id.initialize({
+                client_id: CLIENT_ID,
+                callback: handleAuthorizationCode,
+            });
+
+            // 로그인 버튼 렌더링
+            google.accounts.id.renderButton(
+                document.getElementById('google-signin-button'),
+                { theme: 'outline', size: 'large' }
+            );
+        }
+
+        // ===== 데이터 관리 =====
+        let currentUser = null;
+        let currentStep = 1;
+        let currentReports = [];
+        let selectedGenre = '';
+        let selectedTemplate = 'basic';
+        let selectedRating = 0;
+
+        const users = {
+            jaena: { name: '김재나', avatar: '👧' },
+            jaehu: { name: '김재후', avatar: '👦' }
+        };
+
+        const templates = {
+            basic: {
+                name: '기본형',
+                fields: [
+                    { id: 'content', label: '이 책은 어떤 내용이었나요?', type: 'textarea' },
+                    { id: 'scene', label: '가장 기억에 남는 장면은?', type: 'textarea' },
+                    { id: 'feeling', label: '이 책을 읽고 느낀 점은?', type: 'textarea' },
+                    { id: 'recommend', label: '친구에게 이 책을 추천한다면?', type: 'textarea' }
+                ]
+            },
+            emotion: {
+                name: '감정 일기형',
+                fields: [
+                    { id: 'moodBefore', label: '책을 읽기 전 기분은?', type: 'emoji' },
+                    { id: 'moodAfter', label: '책을 읽은 후 기분은?', type: 'emoji' },
+                    { id: 'touching', label: '가장 감동적인 부분은?', type: 'textarea' },
+                    { id: 'message', label: '주인공에게 하고 싶은 말은?', type: 'textarea' }
+                ]
+            },
+            exploration: {
+                name: '탐구형',
+                fields: [
+                    { id: 'theme', label: '이 책의 주요 주제는 무엇인가요?', type: 'textarea' },
+                    { id: 'newFact', label: '새롭게 알게 된 사실은?', type: 'textarea' },
+                    { id: 'wantToLearn', label: '더 알아보고 싶은 것은?', type: 'textarea' },
+                    { id: 'connection', label: '내 생활과 연결되는 점은?', type: 'textarea' }
+                ]
+            },
+            creative: {
+                name: '창작형',
+                fields: [
+                    { id: 'ifProtagonist', label: '만약 내가 주인공이라면?', type: 'textarea' },
+                    { id: 'sequel', label: '이 이야기의 뒷이야기를 상상해보세요', type: 'textarea' },
+                    { id: 'cover', label: '책 표지를 다시 그린다면?', type: 'textarea' },
+                    { id: 'newTitle', label: '이 책의 제목을 바꾼다면?', type: 'text' }
+                ]
+            },
+            mini: {
+                name: '미니 독후감',
+                fields: [
+                    { id: 'characters', label: '이 책에 나오는 인물은?', type: 'text' },
+                    { id: 'story', label: '무슨 이야기였나요?', type: 'textarea' },
+                    { id: 'funPart', label: '재미있었던 부분은?', type: 'textarea' }
+                ]
+            }
+        };
+
+        const badges = [
+            { id: 'first', name: '첫 발걸음', icon: '👣', count: 1 },
+            { id: 'sprout', name: '독서 새싹', icon: '🌱', count: 10 },
+            { id: 'tree', name: '독서 나무', icon: '🌳', count: 30 },
+            { id: 'king', name: '독서 왕', icon: '👑', count: 50 },
+            { id: 'master', name: '독서 마스터', icon: '🌟', count: 100 }
+        ];
+
+        // ===== 저장소 함수 (Google Drive + localStorage 백업) =====
+        async function saveData() {
+            try {
+                // 먼저 localStorage에 저장 (빠른 응답)
+                const key = `reading-diary-${currentUser}`;
+                localStorage.setItem(key, JSON.stringify(currentReports));
+
+                // Google Drive에도 저장 (백그라운드)
+                if (accessToken) {
+                    await saveToGoogleDrive(currentReports);
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                // localStorage 저장은 성공했으므로 계속 진행
+            }
+        }
+
+        async function loadData() {
+            try {
+                // Google Drive에서 먼저 로드 시도
+                if (accessToken) {
+                    const driveData = await loadFromGoogleDrive();
+                    if (driveData) {
+                        currentReports = driveData;
+                        // localStorage도 업데이트
+                        const key = `reading-diary-${currentUser}`;
+                        localStorage.setItem(key, JSON.stringify(currentReports));
+                        return;
+                    }
+                }
+
+                // Google Drive 실패 시 localStorage에서 로드
+                const key = `reading-diary-${currentUser}`;
+                const data = localStorage.getItem(key);
+                currentReports = data ? JSON.parse(data) : [];
+            } catch (error) {
+                console.error('Load error:', error);
+                // localStorage에서 로드
+                const key = `reading-diary-${currentUser}`;
+                const data = localStorage.getItem(key);
+                currentReports = data ? JSON.parse(data) : [];
+            }
+        }
+
+        async function saveToGoogleDrive(data) {
+            try {
+                const metadata = {
+                    'name': `reading-diary-${currentUser}.json`,
+                    'mimeType': 'application/json'
+                };
+
+                // 기존 파일 찾기
+                const existingFiles = await gapi.client.drive.files.list({
+                    q: `name='reading-diary-${currentUser}.json' and trashed=false`,
+                    spaces: 'drive',
+                    fields: 'files(id, name)',
+                    pageSize: 1
+                });
+
+                const fileData = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+
+                if (existingFiles.result.files && existingFiles.result.files.length > 0) {
+                    // 기존 파일 업데이트
+                    const fileId = existingFiles.result.files[0].id;
+                    await gapi.client.drive.files.update({
+                        fileId: fileId,
+                        resource: metadata,
+                        media: new gapi.client.drive.HttpRequest({ body: fileData })
+                    });
+                } else {
+                    // 새 파일 생성
+                    await gapi.client.drive.files.create({
+                        resource: metadata,
+                        media: new gapi.client.drive.HttpRequest({ body: fileData }),
+                        fields: 'id'
+                    });
+                }
+            } catch (error) {
+                console.error('Google Drive save error:', error);
+                // Google Drive 저장 실패해도 localStorage는 이미 저장됨
+            }
+        }
+
+        async function loadFromGoogleDrive() {
+            try {
+                const files = await gapi.client.drive.files.list({
+                    q: `name='reading-diary-${currentUser}.json' and trashed=false`,
+                    spaces: 'drive',
+                    fields: 'files(id, name)',
+                    pageSize: 1
+                });
+
+                if (files.result.files && files.result.files.length > 0) {
+                    const fileId = files.result.files[0].id;
+                    const response = await gapi.client.drive.files.get({
+                        fileId: fileId,
+                        alt: 'media'
+                    });
+                    return response.result;
+                }
+                return null;
+            } catch (error) {
+                console.error('Google Drive load error:', error);
+                return null;
+            }
+        }
+
+        // ===== 페이지 네비게이션 =====
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(page).classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.nav-item')?.classList.add('active');
+
+            // 사용자 이름 표시
+            const userName = users[currentUser].name;
+            if (document.getElementById('libraryUserName')) {
+                document.getElementById('libraryUserName').textContent = userName;
+            }
+            if (document.getElementById('searchUserName')) {
+                document.getElementById('searchUserName').textContent = userName;
+            }
+            if (document.getElementById('statsUserName')) {
+                document.getElementById('statsUserName').textContent = userName;
+            }
+
+            // 새 글 작성 시 입력 필드 초기화
+            if (page === 'newReport') {
+                clearFormFields();
+            }
+
+            if (page === 'dashboard') updateDashboard();
+            if (page === 'library') updateLibrary();
+            if (page === 'stats') updateStats();
+        }
+
+        function clearFormFields() {
+            // 기본 정보
+            document.getElementById('bookTitle').value = '';
+            document.getElementById('author').value = '';
+            document.getElementById('bookGenre').value = '';
+
+            // 독서 기간
+            document.getElementById('readingStartDate').value = '';
+            document.getElementById('readingEndDate').value = '';
+            document.getElementById('readingDays').textContent = '날짜를 선택해주세요';
+
+            // 독후감 작성
+            document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+
+            // 템플릿 필드들
+            const templateFields = document.querySelectorAll('[id^="field-"]');
+            templateFields.forEach(field => {
+                if (field.tagName === 'TEXTAREA' || field.tagName === 'INPUT') {
+                    if (field.type === 'hidden') {
+                        field.value = '';
+                    } else {
+                        field.value = '';
+                    }
+                }
+            });
+
+            // 별점 & 한줄평
+            document.getElementById('rating').value = '0';
+            document.getElementById('oneLiner').value = '';
+            document.getElementById('charCount').textContent = '0';
+            document.querySelectorAll('.star').forEach(star => star.classList.remove('active'));
+            document.getElementById('ratingEmoji').textContent = '🙂';
+            document.getElementById('ratingText').textContent = '별점을 선택해주세요';
+
+            // 장르 버튼 초기화
+            document.querySelectorAll('.genre-btn').forEach(btn => btn.classList.remove('selected'));
+            selectedGenre = null;
+
+            // 템플릿 선택 초기화
+            document.querySelectorAll('.template-card').forEach(card => card.classList.remove('selected'));
+            document.querySelectorAll('.template-card')[0].classList.add('selected');
+            document.getElementById('selectedTemplate').value = 'basic';
+            selectedTemplate = 'basic';
+
+            // Step 초기화
+            currentStep = 1;
+            renderTemplateFields();
+            updateStepIndicator();
+        }
+
+        function showUserSelection() {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('userSelection').classList.add('active');
+            updateUserBadges();
+        }
+
+        function updateUserBadges() {
+            // 각 사용자의 독후감 개수를 조회하여 배지 업데이트
+            Object.keys(users).forEach(userId => {
+                const key = `reading-diary-${userId}`;
+                const data = localStorage.getItem(key);
+                const reports = data ? JSON.parse(data) : [];
+                const count = reports.length;
+                const badgeEl = document.getElementById(`badge-${userId}`);
+                if (badgeEl) {
+                    badgeEl.textContent = `📖 책 ${count}권`;
+                }
+            });
+        }
+
+        function selectUser(userId) {
+            currentUser = userId;
+
+            // Google Drive API 로그인 (백그라운드)
+            if (!accessToken && gisInited) {
+                tokenClient.requestAccessToken({ prompt: '' });
+            }
+
+            loadData();
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('dashboard').classList.add('active');
+            document.querySelector('.nav-item').classList.add('active');
+            updateDashboard();
+        }
+
+        // ===== 대시보드 =====
+        function updateDashboard() {
+            const today = new Date();
+            const thisMonth = currentReports.filter(r => {
+                const reportDate = new Date(r.reportDate);
+                return reportDate.getMonth() === today.getMonth() &&
+                       reportDate.getFullYear() === today.getFullYear();
+            });
+
+            document.getElementById('monthBooks').textContent = thisMonth.length;
+            document.getElementById('totalBooks').textContent = currentReports.length;
+
+            let avgRating = 0;
+            if (currentReports.length > 0) {
+                avgRating = (currentReports.reduce((sum, r) => sum + r.rating, 0) / currentReports.length).toFixed(1);
+            }
+            document.getElementById('avgRating').textContent = avgRating;
+
+            // 최고 장르 찾기
+            const genreCount = {};
+            currentReports.forEach(r => {
+                genreCount[r.genre] = (genreCount[r.genre] || 0) + 1;
+            });
+            const topGenre = Object.keys(genreCount).reduce((a, b) =>
+                genreCount[a] > genreCount[b] ? a : b, '-');
+            document.getElementById('topGenre').textContent = topGenre === '-' ? '-' : topGenre.split('/')[0];
+
+            // 최근 5개
+            const recent = currentReports.slice(-5).reverse();
+            const recentHtml = recent.map(r => `
+                <div class="list-item" onclick="showReportDetail('${r.id}')">
+                    <div class="list-item-title">${r.bookTitle}</div>
+                    <div class="tag">${r.genre.split('/')[0]}</div>
+                    <div class="list-item-meta">
+                        <span>${'⭐'.repeat(r.rating)}</span>
+                        <span>${formatDate(r.reportDate)}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('recentReports').innerHTML = recentHtml || '<div class="empty-state"><div class="empty-state-text">독후감이 없어요</div></div>';
+
+            // 업데이트 배지 카운트
+            document.getElementById('badge-jaena').textContent = `📖 책 ${currentReports.filter(r => r.userId === 'jaena').length}권`;
+            document.getElementById('badge-jaehu').textContent = `📖 책 ${currentReports.filter(r => r.userId === 'jaehu').length}권`;
+
+            document.getElementById('userName').textContent = users[currentUser].name;
+            document.getElementById('userAvatar').textContent = users[currentUser].avatar;
+        }
+
+        // ===== 새 독후감 작성 =====
+        function nextStep() {
+            if (currentStep === 1) {
+                if (!document.getElementById('bookTitle').value || !document.getElementById('bookGenre').value) {
+                    alert('필수 항목을 입력해주세요');
+                    return;
+                }
+            }
+
+            if (currentStep === 5) {
+                saveReport();
+                return;
+            }
+
+            currentStep++;
+
+            if (currentStep === 3) {
+                renderTemplateFields();
+            }
+
+            updateStepUI();
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepUI();
+            }
+        }
+
+        function updateStepUI() {
+            document.querySelectorAll('.step-indicator ~ .step').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.step-indicator ~ .step').forEach(s => {
+                if (s.getAttribute('data-step') === String(currentStep)) s.classList.add('active');
+            });
+
+            document.querySelectorAll('.step-dot').forEach((dot, i) => {
+                const stepNum = i + 1;
+                dot.classList.remove('active', 'completed');
+                if (stepNum === currentStep) dot.classList.add('active');
+                if (stepNum < currentStep) dot.classList.add('completed');
+            });
+
+            document.getElementById('prevBtn').style.display = currentStep > 1 ? 'block' : 'none';
+            document.getElementById('nextBtn').textContent = currentStep === 5 ? '저장하기' : '다음';
+
+            if (currentStep === 2) calculateReadingDays();
+            if (currentStep === 5) generatePreview();
+        }
+
+        function selectGenre(btn, genre) {
+            document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            document.getElementById('bookGenre').value = genre;
+            selectedGenre = genre;
+        }
+
+        function calculateReadingDays() {
+            const start = new Date(document.getElementById('readingStartDate').value);
+            const end = new Date(document.getElementById('readingEndDate').value);
+
+            if (start && end && end >= start) {
+                const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+                document.getElementById('readingDays').textContent = `${days + 1}일 동안 읽었어요!`;
+            }
+        }
+
+        function selectTemplate(btn, template) {
+            document.querySelectorAll('.template-card').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            document.getElementById('selectedTemplate').value = template;
+            selectedTemplate = template;
+            renderTemplateFields();
+        }
+
+        function renderTemplateFields() {
+            const template = templates[selectedTemplate];
+            const html = template.fields.map(field => {
+                if (field.type === 'textarea') {
+                    return `
+                        <div class="form-group">
+                            <label>${field.label}</label>
+                            <textarea id="field-${field.id}" placeholder="글을 입력하세요"></textarea>
+                        </div>
+                    `;
+                } else if (field.type === 'text') {
+                    return `
+                        <div class="form-group">
+                            <label>${field.label}</label>
+                            <input type="text" id="field-${field.id}" placeholder="입력하세요">
+                        </div>
+                    `;
+                } else if (field.type === 'emoji') {
+                    return `
+                        <div class="form-group">
+                            <label>${field.label}</label>
+                            <div class="emoji-selector">
+                                <span class="emoji-option" onclick="selectEmoji(this, 'field-${field.id}')">😊</span>
+                                <span class="emoji-option" onclick="selectEmoji(this, 'field-${field.id}')">😐</span>
+                                <span class="emoji-option" onclick="selectEmoji(this, 'field-${field.id}')">😢</span>
+                                <span class="emoji-option" onclick="selectEmoji(this, 'field-${field.id}')">😠</span>
+                                <span class="emoji-option" onclick="selectEmoji(this, 'field-${field.id}')">🤔</span>
+                            </div>
+                            <input type="hidden" id="field-${field.id}">
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            document.getElementById('templateFields').innerHTML = html;
+        }
+
+        function selectEmoji(btn, fieldId) {
+            document.querySelectorAll(`#${fieldId.split('-')[1]} .emoji-option`).forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            document.getElementById(fieldId).value = btn.textContent;
+        }
+
+        function setRating(rating) {
+            selectedRating = rating;
+            document.querySelectorAll('.star').forEach((s, i) => {
+                s.classList.toggle('filled', i < rating);
+            });
+
+            const emojis = ['', '😕', '🤔', '😊', '😍', '🤩'];
+            const texts = ['', '아쉬웠어요', '보통이에요', '괜찮았어요', '재미있었어요!', '최고였어요!!'];
+            document.getElementById('ratingEmoji').textContent = emojis[rating];
+            document.getElementById('ratingText').textContent = texts[rating];
+            document.getElementById('rating').value = rating;
+        }
+
+        function generatePreview() {
+            const template = templates[selectedTemplate];
+            const fields = template.fields.map(f => {
+                const value = document.getElementById(`field-${f.id}`)?.value || '';
+                return `<div class="report-section"><div class="section-title">${f.label}</div><div>${value}</div></div>`;
+            }).join('');
+
+            const html = `
+                <div class="detail-header">
+                    <div class="detail-title">${document.getElementById('bookTitle').value}</div>
+                    <div class="detail-meta">
+                        <span>글쓴이: ${document.getElementById('bookAuthor').value || '-'}</span>
+                        <span>장르: ${selectedGenre}</span>
+                    </div>
+                </div>
+                <div class="rating-display">⭐ ${selectedRating}/${5}</div>
+                <div style="color: #666; margin: 10px 0;">한줄평: ${document.getElementById('oneLiner').value}</div>
+                ${fields}
+            `;
+            document.getElementById('previewContainer').innerHTML = html;
+        }
+
+        function saveReport() {
+            if (!selectedRating) {
+                alert('별점을 선택해주세요');
+                return;
+            }
+
+            const template = templates[selectedTemplate];
+            const reportContent = {};
+            template.fields.forEach(f => {
+                reportContent[f.id] = document.getElementById(`field-${f.id}`)?.value || '';
+            });
+
+            const report = {
+                id: Date.now().toString(),
+                userId: currentUser,
+                bookTitle: document.getElementById('bookTitle').value,
+                author: document.getElementById('bookAuthor').value,
+                publisher: document.getElementById('bookPublisher').value,
+                genre: selectedGenre,
+                readingStartDate: document.getElementById('readingStartDate').value,
+                readingEndDate: document.getElementById('readingEndDate').value,
+                reportDate: document.getElementById('reportDate').value || new Date().toISOString().split('T')[0],
+                templateType: selectedTemplate,
+                reportContent: reportContent,
+                rating: selectedRating,
+                oneLiner: document.getElementById('oneLiner').value,
+                isFavorite: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            currentReports.push(report);
+            saveData();
+            showConfetti();
+
+            setTimeout(() => {
+                currentStep = 1;
+                selectedRating = 0;
+                selectedTemplate = 'basic';
+                selectedGenre = '';
+                document.querySelector('#newReport form')?.reset?.();
+                updateStepUI();
+                updateDashboard();
+                showPage('dashboard');
+            }, 1500);
+        }
+
+        // ===== 내 서재 =====
+        function updateLibrary() {
+            const html = currentReports.map(r => `
+                <div class="list-item" onclick="showReportDetail('${r.id}')">
+                    <div class="list-item-title">${r.bookTitle}</div>
+                    <div class="tag">${r.genre}</div>
+                    <div class="list-item-meta">
+                        <span>${'⭐'.repeat(r.rating)}</span>
+                        <span>${formatDate(r.reportDate)}</span>
+                    </div>
+                    <div style="margin-top: 8px; color: #999; font-size: 13px;">${r.oneLiner}</div>
+                </div>
+            `).join('');
+
+            document.getElementById('libraryList').innerHTML = html || '<div class="empty-state"><div class="empty-state-text">독후감이 없어요</div></div>';
+        }
+
+        function filterLibrary(rating, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            let filtered = currentReports;
+            if (rating !== 'all') {
+                filtered = currentReports.filter(r => r.rating === parseInt(rating));
+            }
+
+            const html = filtered.map(r => `
+                <div class="list-item" onclick="showReportDetail('${r.id}')">
+                    <div class="list-item-title">${r.bookTitle}</div>
+                    <div class="tag">${r.genre}</div>
+                    <div class="list-item-meta">
+                        <span>${'⭐'.repeat(r.rating)}</span>
+                        <span>${formatDate(r.reportDate)}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('libraryList').innerHTML = html;
+        }
+
+        function showReportDetail(id) {
+            const report = currentReports.find(r => r.id === id);
+            if (!report) return;
+
+            const template = templates[report.templateType];
+            const fields = template.fields.map(f => {
+                return `<div class="report-section"><div class="section-title">${f.label}</div><div>${report.reportContent[f.id]}</div></div>`;
+            }).join('');
+
+            const html = `
+                <div class="detail-header">
+                    <div class="detail-title">${report.bookTitle}</div>
+                    <div class="detail-meta">
+                        <span>글쓴이: ${report.author || '-'}</span>
+                        <span>출판사: ${report.publisher || '-'}</span>
+                        <span>장르: ${report.genre}</span>
+                        <span>읽은 기간: ${formatDate(report.readingStartDate)} ~ ${formatDate(report.readingEndDate)}</span>
+                    </div>
+                </div>
+                <div class="rating-display">⭐ ${report.rating}/${5}</div>
+                <div style="color: #666; margin: 20px 0; font-size: 16px;"><strong>한줄평:</strong> ${report.oneLiner}</div>
+                <h3 style="margin-top: 30px; margin-bottom: 15px;">독후감</h3>
+                ${fields}
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-small" onclick="printReport('${id}')">🖨️ 프린트</button>
+                    <button class="btn btn-primary btn-small" onclick="downloadPDF('${id}')">📄 PDF</button>
+                    <button class="btn btn-danger btn-small" onclick="deleteReport('${id}')">🗑️ 삭제</button>
+                </div>
+            `;
+
+            document.getElementById('detailContent').innerHTML = html;
+            showPage('reportDetail');
+        }
+
+        function printReport(id) {
+            try {
+                const report = currentReports.find(r => r.id === id);
+                if (!report) return;
+
+                const template = templates[report.templateType];
+                const formatDateLocal = (dateStr) => {
+                    if (!dateStr) return '-';
+                    const date = new Date(dateStr);
+                    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+                };
+
+                const fieldsHtml = template.fields.map(f => `
+                    <div class="field-block">
+                        <div class="field-label">${f.label}</div>
+                        <div class="field-content">${(report.reportContent[f.id] || '').replace(/\n/g, '<br>')}</div>
+                    </div>
+                `).join('');
+
+                const printContent = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>${report.bookTitle} - 독후감</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gamja+Flower&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Gamja Flower', '맑은 고딕', 'Malgun Gothic', sans-serif;
+            color: #333;
+            line-height: 1.6;
+            padding: 40px;
+            background: white;
+        }
+        h1, h2, strong, .field-label, .meta-label {
+            font-family: 'Jua', '맑은 고딕', 'Malgun Gothic', sans-serif;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #FFB347;
+        }
+        h1 { font-size: 28px; color: #333; margin-bottom: 8px; }
+        .meta {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 2;
+        }
+        .meta-label { color: #333; font-weight: bold; }
+        .highlight-box {
+            background: #FFF8F0;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+        .rating { font-size: 15px; margin-bottom: 5px; }
+        .oneLiner { font-size: 15px; font-style: italic; }
+        .field-block {
+            margin-bottom: 18px;
+            page-break-inside: avoid;
+        }
+        .field-label {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+        .field-content {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.8;
+            padding-left: 8px;
+            border-left: 3px solid #FFB347;
+            padding-top: 2px;
+            padding-bottom: 2px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            text-align: right;
+            font-size: 12px;
+            color: #999;
+        }
+        @media print {
+            body { padding: 20px; }
+            @page { size: A4; margin: 15mm; }
+            .field-block { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>${report.bookTitle}</h1>
+    </div>
+    <div class="meta">
+        <div><span class="meta-label">지은이:</span> ${report.author || '-'}</div>
+        <div><span class="meta-label">출판사:</span> ${report.publisher || '-'}</div>
+        <div><span class="meta-label">도서장르:</span> ${report.genre}</div>
+        <div><span class="meta-label">독서 기간:</span> ${formatDateLocal(report.readingStartDate)} ~ ${formatDateLocal(report.readingEndDate)}</div>
+    </div>
+    <div class="highlight-box">
+        <div class="rating"><span class="meta-label">별점:</span> ${'⭐'.repeat(report.rating)} (${report.rating}/5)</div>
+        <div class="oneLiner"><span class="meta-label">한줄평:</span> "${report.oneLiner}"</div>
+    </div>
+    ${fieldsHtml}
+    <div class="footer">
+        작성일: ${formatDateLocal(report.reportDate)}
+    </div>
+</body>
+</html>`;
+
+                // iframe을 사용한 프린트
+                const existingIframe = document.getElementById('printIframe');
+                if (existingIframe) {
+                    document.body.removeChild(existingIframe);
+                }
+
+                const iframe = document.createElement('iframe');
+                iframe.id = 'printIframe';
+                iframe.style.position = 'fixed';
+                iframe.style.right = '0';
+                iframe.style.bottom = '0';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = '0';
+                document.body.appendChild(iframe);
+
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                iframeDoc.open();
+                iframeDoc.write(printContent);
+                iframeDoc.close();
+
+                // 폰트와 컨텐츠 로딩을 위한 충분한 대기 시간
+                setTimeout(() => {
+                    try {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                    } catch (e) {
+                        console.error('프린트 실행 오류:', e);
+                        alert('프린트 실행에 실패했습니다. 브라우저 팝업 차단을 확인해주세요.');
+                    }
+                }, 800);
+            } catch (error) {
+                console.error('프린트 오류:', error);
+                alert('프린트 중 오류가 발생했습니다: ' + error.message);
+            }
+        }
+
+        async function downloadPDF(id) {
+            try {
+                const report = currentReports.find(r => r.id === id);
+                if (!report) return;
+
+                const template = templates[report.templateType];
+                const formatDateLocal = (dateStr) => {
+                    if (!dateStr) return '-';
+                    const date = new Date(dateStr);
+                    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+                };
+
+                // PDF용 HTML 컨텐츠 생성
+                const pdfContainer = document.createElement('div');
+                pdfContainer.style.cssText = `
+                    position: absolute;
+                    left: -9999px;
+                    top: 0;
+                    width: 794px;
+                    padding: 40px;
+                    background: white;
+                    font-family: 'Gamja Flower', cursive;
+                    color: #333;
+                    box-sizing: border-box;
+                    line-height: 1.6;
+                `;
+
+                const fieldsHtml = template.fields.map(f => `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #333; font-family: 'Jua', cursive;">${f.label}</div>
+                        <div style="font-size: 14px; line-height: 1.8; color: #555; white-space: pre-wrap; font-family: 'Gamja Flower', cursive;">${report.reportContent[f.id] || ''}</div>
+                    </div>
+                `).join('');
+
+                pdfContainer.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="font-size: 32px; margin: 0 0 15px 0; color: #333; font-family: 'Jua', cursive;">${report.bookTitle}</h1>
+                        <div style="height: 2px; background: #FFB347; margin: 15px 0;"></div>
+                    </div>
+
+                    <div style="font-size: 14px; color: #666; margin-bottom: 25px; line-height: 2; font-family: 'Gamja Flower', cursive;">
+                        <div><strong style="font-family: 'Jua', cursive;">지은이:</strong> ${report.author || '-'}</div>
+                        <div><strong style="font-family: 'Jua', cursive;">출판사:</strong> ${report.publisher || '-'}</div>
+                        <div><strong style="font-family: 'Jua', cursive;">도서장르:</strong> ${report.genre}</div>
+                        <div><strong style="font-family: 'Jua', cursive;">독서 기간:</strong> ${formatDateLocal(report.readingStartDate)} ~ ${formatDateLocal(report.readingEndDate)}</div>
+                    </div>
+
+                    <div style="background: #FFF8F0; padding: 20px; border-radius: 8px; margin-bottom: 30px; font-family: 'Gamja Flower', cursive;">
+                        <div style="font-size: 15px; margin-bottom: 8px; font-family: 'Jua', cursive;"><strong>별점:</strong> ${'⭐'.repeat(report.rating)} (${report.rating}/5)</div>
+                        <div style="font-size: 15px; font-family: 'Gamja Flower', cursive;"><strong style="font-family: 'Jua', cursive;">한줄평:</strong> "${report.oneLiner}"</div>
+                    </div>
+
+                    <div style="margin-top: 30px; font-family: 'Gamja Flower', cursive;">
+                        ${fieldsHtml}
+                    </div>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999; text-align: right; font-family: 'Gamja Flower', cursive;">
+                        작성일: ${formatDateLocal(report.reportDate)}
+                    </div>
+                `;
+
+                document.body.appendChild(pdfContainer);
+
+                // html2canvas로 HTML을 캔버스로 변환 (저해상도로 파일 사이즈 최소화)
+                const canvas = await html2canvas(pdfContainer, {
+                    scale: 1.5,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    allowTaint: true,
+                    logging: false
+                });
+
+                document.body.removeChild(pdfContainer);
+
+                // jsPDF로 PDF 생성
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const imgWidth = 210;
+                const pageHeight = 297;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                // JPEG로 압축 (0.7 품질로 파일 사이즈 대폭 감소)
+                const imgData = canvas.toDataURL('image/jpeg', 0.7);
+                doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                // 페이지가 넘칠 경우 추가 페이지
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight;
+                    doc.addPage();
+                    doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                // PDF 다운로드
+                doc.save(`독후감_${report.bookTitle}_${report.reportDate}.pdf`);
+            } catch (error) {
+                console.error('PDF 다운로드 오류:', error);
+                alert('PDF 생성 중 오류가 발생했습니다: ' + error.message);
+            }
+        }
+
+        function deleteReport(id) {
+            if (confirm('정말 삭제하시겠어요?')) {
+                currentReports = currentReports.filter(r => r.id !== id);
+                saveData();
+                showPage('library');
+                updateLibrary();
+            }
+        }
+
+        // ===== 검색 =====
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const selectedGenres = Array.from(document.querySelectorAll('.genre-filter:checked')).map(c => c.value);
+            const selectedRatings = Array.from(document.querySelectorAll('.rating-filter:checked')).map(c => parseInt(c.value));
+            const startDate = document.getElementById('searchStartDate').value;
+            const endDate = document.getElementById('searchEndDate').value;
+
+            let filtered = currentReports;
+
+            // 텍스트 검색
+            if (query) {
+                filtered = filtered.filter(r =>
+                    r.bookTitle.toLowerCase().includes(query) ||
+                    r.author?.toLowerCase().includes(query) ||
+                    r.oneLiner.toLowerCase().includes(query)
+                );
+            }
+
+            // 작성일 필터
+            if (startDate || endDate) {
+                filtered = filtered.filter(r => {
+                    const reportDate = new Date(r.reportDate);
+                    if (startDate && reportDate < new Date(startDate)) return false;
+                    if (endDate && reportDate > new Date(endDate)) return false;
+                    return true;
+                });
+            }
+
+            // 장르 필터
+            if (selectedGenres.length > 0) {
+                filtered = filtered.filter(r => selectedGenres.some(g => r.genre.includes(g)));
+            }
+
+            // 별점 필터
+            if (selectedRatings.length > 0) {
+                filtered = filtered.filter(r => selectedRatings.includes(r.rating));
+            }
+
+            const html = filtered.map(r => `
+                <div class="list-item" onclick="showReportDetail('${r.id}')">
+                    <div class="list-item-title">${r.bookTitle}</div>
+                    <div class="tag">${r.genre}</div>
+                    <div class="list-item-meta">
+                        <span>${'⭐'.repeat(r.rating)}</span>
+                        <span>${formatDate(r.reportDate)}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('searchResults').innerHTML = html || '<div class="empty-state"><div class="empty-state-text">검색 결과가 없어요</div></div>';
+        }
+
+        // ===== 통계 =====
+        function updateStats() {
+            // 뱃지
+            const bookCount = currentReports.length;
+            const badgeHtml = badges.map(b => {
+                const unlocked = bookCount >= b.count;
+                return `
+                    <div class="badge-item ${!unlocked ? 'locked' : ''}">
+                        <div class="badge-icon">${b.icon}</div>
+                        <div class="badge-name">${b.name}</div>
+                        <div style="font-size: 12px; color: #999;">${b.count}권</div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('badgeShowcase').innerHTML = badgeHtml;
+
+            // 목표
+            const monthlyGoal = parseInt(localStorage.getItem(`goal-${currentUser}`) || '5');
+            const today = new Date();
+            const thisMonth = currentReports.filter(r => {
+                const d = new Date(r.reportDate);
+                return d.getMonth() === today.getMonth();
+            }).length;
+            const percent = Math.min((thisMonth / monthlyGoal) * 100, 100);
+
+            document.getElementById('monthlyProgress').innerHTML = `
+                <div style="margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>진행도: ${thisMonth}/${monthlyGoal}</span>
+                        <span>${Math.round(percent)}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${percent}%;"></div>
+                    </div>
+                </div>
+            `;
+
+            // 별점 분포
+            const ratingDist = [0,0,0,0,0];
+            currentReports.forEach(r => ratingDist[r.rating - 1]++);
+            const ratingChartHtml = ratingDist.map((count, i) => `
+                <div style="display: flex; gap: 10px; align-items: center; margin: 8px 0;">
+                    <span style="width: 40px;">⭐${i + 1}</span>
+                    <div class="progress-bar" style="flex: 1; height: 15px;">
+                        <div class="progress-fill" style="width: ${(count / Math.max(...ratingDist, 1)) * 100}%;"></div>
+                    </div>
+                    <span style="width: 30px; text-align: right;">${count}</span>
+                </div>
+            `).join('');
+            document.getElementById('ratingChart').innerHTML = ratingChartHtml;
+
+            // 장르 분포
+            const genreDist = {};
+            currentReports.forEach(r => {
+                const g = r.genre.split('/')[0];
+                genreDist[g] = (genreDist[g] || 0) + 1;
+            });
+            const genreChartHtml = Object.entries(genreDist).map(([genre, count]) => `
+                <div style="margin: 15px 0; padding: 10px; background: rgba(255, 179, 71, 0.1); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <strong>${genre}</strong>
+                        <span>${count}권</span>
+                    </div>
+                    <div class="progress-bar" style="height: 15px;">
+                        <div class="progress-fill" style="width: ${(count / Math.max(...Object.values(genreDist), 1)) * 100}%;"></div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('genreChart').innerHTML = genreChartHtml || '<p style="color: #999;">데이터가 없어요</p>';
+        }
+
+        function setGoal(type) {
+            const input = document.getElementById('monthlyGoal');
+            const value = parseInt(input.value);
+            if (value > 0) {
+                localStorage.setItem(`goal-${currentUser}`, value);
+                updateStats();
+            }
+        }
+
+        // ===== 유틸리티 =====
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function showConfetti() {
+            for (let i = 0; i < 30; i++) {
+                const conf = document.createElement('div');
+                conf.className = 'confetti';
+                conf.textContent = '🎉';
+                conf.style.left = Math.random() * 100 + '%';
+                conf.style.top = Math.random() * 100 + '%';
+                conf.style.fontSize = Math.random() * 20 + 10 + 'px';
+                document.body.appendChild(conf);
+                setTimeout(() => conf.remove(), 3000);
+            }
+        }
+
+        // ===== 초기화 =====
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('reportDate').valueAsDate = new Date();
+            document.getElementById('oneLiner').addEventListener('input', (e) => {
+                document.getElementById('charCount').textContent = e.target.value.length;
+            });
+            // 초기 로드 시 사용자 배지 업데이트
+            updateUserBadges();
+
+            // Google API 초기화
+            window.onload = function() {
+                gapiLoaded();
+                gisLoaded();
+            };
+        });
+
+        // Google API 동적 로드
+        function loadGoogleAPIs() {
+            // GAPI 로드
+            const gapiScript = document.createElement('script');
+            gapiScript.src = 'https://apis.google.com/js/api.js?onload=gapiLoaded&async=true&defer=true';
+            gapiScript.async = true;
+            gapiScript.defer = true;
+            document.head.appendChild(gapiScript);
+
+            // GIS 로드 (이미 head에 있음)
+        }
+
+        // 페이지 로드 시 Google API 로드
+        window.addEventListener('load', loadGoogleAPIs);
+    </script>
+</body>
+</html>
