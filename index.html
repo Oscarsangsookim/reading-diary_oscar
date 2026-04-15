@@ -1200,6 +1200,34 @@
             }
         }
 
+        // ===== 토큰 localStorage 저장/복구 (하이브리드 방식) =====
+        const TOKEN_KEY = 'gapi_access_token';
+        const TOKEN_TIME_KEY = 'gapi_token_time';
+        const TOKEN_LIFETIME_MS = 55 * 60 * 1000; // 안전하게 55분 (실제 1시간)
+
+        function saveTokenToStorage(token) {
+            localStorage.setItem(TOKEN_KEY, token);
+            localStorage.setItem(TOKEN_TIME_KEY, Date.now().toString());
+        }
+
+        function loadTokenFromStorage() {
+            const token = localStorage.getItem(TOKEN_KEY);
+            const time = parseInt(localStorage.getItem(TOKEN_TIME_KEY) || '0', 10);
+            if (!token || !time) return null;
+            if (Date.now() - time > TOKEN_LIFETIME_MS) {
+                // 만료 → 제거
+                localStorage.removeItem(TOKEN_KEY);
+                localStorage.removeItem(TOKEN_TIME_KEY);
+                return null;
+            }
+            return token;
+        }
+
+        function clearStoredToken() {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(TOKEN_TIME_KEY);
+        }
+
         // GIS (Google Identity Services) 로드 — OAuth2 토큰 클라이언트
         function gisLoaded() {
             try {
@@ -1210,15 +1238,21 @@
                         if (tokenResponse && tokenResponse.access_token) {
                             accessToken = tokenResponse.access_token;
                             gapi.client.setToken({ access_token: accessToken });
-                            console.log('✅ Google Drive 인증 성공');
-                            // 인증 완료 후 데이터 동기화
+                            saveTokenToStorage(accessToken); // 💾 localStorage에 저장
+                            console.log('✅ Google Drive 인증 성공 (토큰 저장됨)');
                             if (pendingUser) {
                                 syncAfterAuth();
                             }
                         }
                     },
                     error_callback: (err) => {
-                        console.warn('Google 인증 취소/실패 — localStorage만 사용:', err);
+                        console.warn('Google 인증 실패 — 팝업으로 재시도:', err);
+                        // prompt: 'none' 실패 → 팝업으로 다시 시도
+                        if (err && err.type === 'popup_failed_to_open') return;
+                        // 조용한 갱신 실패했으면 사용자에게 팝업으로 재요청
+                        if (tokenClient) {
+                            tokenClient.requestAccessToken({ prompt: '' });
+                        }
                     }
                 });
                 gisInited = true;
@@ -1228,18 +1262,35 @@
             }
         }
 
-        // 토큰 요청 (사용자 클릭으로 트리거됨)
+        // 토큰 요청 (하이브리드: localStorage → 조용한 갱신 → 팝업)
         function requestDriveAuth() {
             if (!tokenClient) {
                 console.warn('tokenClient 아직 준비 안 됨');
                 return;
             }
-            if (accessToken) {
-                // 이미 인증됨
+
+            // 1단계: localStorage에서 유효한 토큰 찾기
+            const storedToken = loadTokenFromStorage();
+            if (storedToken) {
+                accessToken = storedToken;
+                if (gapi && gapi.client) {
+                    gapi.client.setToken({ access_token: accessToken });
+                }
+                console.log('✅ 저장된 토큰 사용 (팝업 없음)');
                 if (pendingUser) syncAfterAuth();
                 return;
             }
-            tokenClient.requestAccessToken({ prompt: '' });
+
+            // 2단계: 이미 메모리에 토큰 있으면 사용
+            if (accessToken) {
+                if (pendingUser) syncAfterAuth();
+                return;
+            }
+
+            // 3단계: 조용히 갱신 시도 (prompt: 'none')
+            // 실패하면 error_callback에서 자동으로 팝업 띄움
+            console.log('🔄 토큰 조용히 갱신 시도 중...');
+            tokenClient.requestAccessToken({ prompt: 'none' });
         }
 
         // 인증 후 데이터 동기화
@@ -1365,6 +1416,21 @@
             }
         }
 
+        function handleAuthError(error) {
+            // 401/403 → 토큰 만료/무효
+            const status = error && (error.status || (error.result && error.result.error && error.result.error.code));
+            if (status === 401 || status === 403) {
+                console.warn('⚠️ 토큰 만료됨 — 재인증 시도');
+                clearStoredToken();
+                accessToken = null;
+                if (tokenClient) {
+                    tokenClient.requestAccessToken({ prompt: 'none' });
+                }
+                return true;
+            }
+            return false;
+        }
+
         async function saveToGoogleDrive(data) {
             if (!accessToken || !gapiInited) return;
             try {
@@ -1417,6 +1483,7 @@
                 console.log('✅ Google Drive 저장 완료');
             } catch (error) {
                 console.error('Google Drive save error:', error);
+                handleAuthError(error);
             }
         }
 
@@ -1448,6 +1515,7 @@
                 return Array.isArray(parsed) ? parsed : null;
             } catch (error) {
                 console.error('Google Drive load error:', error);
+                handleAuthError(error);
                 return null;
             }
         }
@@ -2345,11 +2413,24 @@
         });
 
         function initGoogleAPIs() {
+            // 앱 시작할 때 localStorage에서 토큰 먼저 복구
+            const storedToken = loadTokenFromStorage();
+            if (storedToken) {
+                accessToken = storedToken;
+                console.log('✅ 저장된 토큰 복구 (새로고침/재접속)');
+            }
+
             // gapi 준비 대기
             const waitGapi = setInterval(() => {
                 if (typeof gapi !== 'undefined') {
                     clearInterval(waitGapi);
                     gapiLoaded();
+                    // gapi 로드 후 저장된 토큰을 gapi에도 설정
+                    setTimeout(() => {
+                        if (accessToken && gapi && gapi.client) {
+                            gapi.client.setToken({ access_token: accessToken });
+                        }
+                    }, 500);
                 }
             }, 100);
 
