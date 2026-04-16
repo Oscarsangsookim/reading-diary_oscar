@@ -420,41 +420,47 @@
             color: #333;
         }
 
-        /* 스텝 폼 */
-        .step {
-            display: none;
+        /* 섹션 카드 (통합 스크롤) */
+        .section-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--primary);
         }
 
-        .step.active {
-            display: block;
+        .section-card h2 {
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 22px;
         }
 
-        .step-indicator {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            justify-content: center;
-        }
-
-        .step-dot {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #E0E0E0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: white;
-        }
-
-        .step-dot.active {
-            background: var(--primary);
-        }
-
-        .step-dot.completed {
+        /* 자동 저장 알림 */
+        .autosave-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
             background: var(--success);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            pointer-events: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
+
+        .autosave-indicator.show {
+            opacity: 1;
+        }
+
+        /* 레거시 호환 (기존 .step 클래스 숨기지 않음) */
+        .step { display: block; }
+        .step-indicator { display: none; }
 
         /* 빈 상태 */
         .empty-state {
@@ -884,16 +890,11 @@
         <div class="container" style="padding-bottom: 100px;">
             <h1 style="margin-bottom: 30px;">✍️ 새 독후감 작성</h1>
 
-            <div class="step-indicator">
-                <div class="step-dot active" data-step="1">1</div>
-                <div class="step-dot" data-step="2">2</div>
-                <div class="step-dot" data-step="3">3</div>
-                <div class="step-dot" data-step="4">4</div>
-                <div class="step-dot" data-step="5">5</div>
-            </div>
+            <!-- 자동 저장 알림 -->
+            <div id="autoSaveIndicator" class="autosave-indicator">💾 자동 저장됨</div>
 
             <!-- Step 1: 책 정보 -->
-            <div class="step active" data-step="1">
+            <div class="section-card" data-step="1">
                 <h2>📖 책 정보</h2>
                 <div class="form-group">
                     <label>책 제목 *</label>
@@ -912,7 +913,7 @@
                     <div class="genre-grid">
                         <button class="genre-btn" onclick="selectGenre(this, '동화/명작')">📖 동화/명작</button>
                         <button class="genre-btn" onclick="selectGenre(this, '판타지/모험')">🧚 판타지</button>
-                        <button class="genre-btn" onclick="selectGenre(this, '과학/자연')">🔬 과학</button>
+                        <button class="genre-btn" onclick="selectGenre(this, '과학/추리')">🔬 과학/추리</button>
                         <button class="genre-btn" onclick="selectGenre(this, '수학/논리')">📐 수학</button>
                         <button class="genre-btn" onclick="selectGenre(this, '사회/역사')">🌍 역사</button>
                         <button class="genre-btn" onclick="selectGenre(this, '예술/음악')">🎨 예술</button>
@@ -926,7 +927,7 @@
             </div>
 
             <!-- Step 2: 독서 기간 -->
-            <div class="step" data-step="2">
+            <div class="section-card" data-step="2">
                 <h2>📅 독서 기간</h2>
                 <div class="form-group">
                     <label>독서 시작일</label>
@@ -942,7 +943,7 @@
             </div>
 
             <!-- Step 3: 독후감 작성 -->
-            <div class="step" data-step="3">
+            <div class="section-card" data-step="3">
                 <h2>🖊️ 독후감 작성</h2>
                 <div class="form-group">
                     <label>독후감 작성일</label>
@@ -978,7 +979,7 @@
             </div>
 
             <!-- Step 4: 별점 & 한줄평 -->
-            <div class="step" data-step="4">
+            <div class="section-card" data-step="4">
                 <h2>⭐ 별점 & 한줄평</h2>
                 <div class="form-group">
                     <label>만족도</label>
@@ -1004,15 +1005,9 @@
                 </div>
             </div>
 
-            <!-- Step 5: 미리보기 & 저장 -->
-            <div class="step" data-step="5">
-                <h2>👀 미리보기 & 저장</h2>
-                <div class="preview-container" id="previewContainer"></div>
-            </div>
-
             <div class="form-buttons" style="margin-top: 30px;">
-                <button class="btn btn-secondary" onclick="previousStep()" id="prevBtn" style="display: none;">이전</button>
-                <button class="btn btn-primary" onclick="nextStep()" id="nextBtn">다음</button>
+                <button class="btn btn-secondary" onclick="discardDraft()" id="discardBtn">🗑️ 작성 취소</button>
+                <button class="btn btn-primary" onclick="saveReport()" id="saveBtn">💾 저장하기</button>
             </div>
         </div>
     </div>
@@ -1298,10 +1293,30 @@
             if (!pendingUser) return;
             const user = pendingUser;
             pendingUser = null;
-            await loadData();
+
+            // saveData() 중 토큰 없어서 큐에 넣은 저장 처리
+            if (window._pendingSave) {
+                window._pendingSave = false;
+                const key = `reading-diary-${user}`;
+                try {
+                    const raw = localStorage.getItem(key);
+                    const localData = raw ? JSON.parse(raw) : [];
+                    const driveData = await loadFromGoogleDrive() || [];
+                    const merged = mergeReports(localData, driveData);
+                    await saveToGoogleDrive(merged);
+                    currentReports = merged;
+                    localStorage.setItem(key, JSON.stringify(merged));
+                    console.log(`✅ 지연 저장 완료: ${merged.length}권 Drive에 저장됨`);
+                } catch (e) {
+                    console.error('지연 저장 실패:', e);
+                }
+            } else {
+                await loadData();
+            }
+
             updateDashboard();
             updateUserBadges();
-            console.log(`✅ ${user} 데이터 Google Drive에서 동기화 완료`);
+            console.log(`✅ ${user} Drive 동기화 완료`);
         }
 
         // ===== 데이터 관리 =====
@@ -1372,48 +1387,78 @@
             { id: 'master', name: '독서 마스터', icon: '🌟', count: 100 }
         ];
 
-        // ===== 저장소 함수 (Google Drive + localStorage 백업) =====
+        // ===== 저장소 함수 (Google Drive + localStorage) =====
+
+        // 두 배열을 id 기준으로 머지 (중복 제거, 최신 updatedAt 우선)
+        function mergeReports(local, drive) {
+            const map = new Map();
+            [...(local || []), ...(drive || [])].forEach(r => {
+                if (!r || !r.id) return;
+                const existing = map.get(r.id);
+                if (!existing) {
+                    map.set(r.id, r);
+                } else {
+                    // updatedAt이 더 최신인 것 우선
+                    const existTime = new Date(existing.updatedAt || 0).getTime();
+                    const newTime = new Date(r.updatedAt || 0).getTime();
+                    if (newTime > existTime) map.set(r.id, r);
+                }
+            });
+            return Array.from(map.values()).sort((a, b) =>
+                new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+            );
+        }
+
         async function saveData() {
+            const key = `reading-diary-${currentUser}`;
             try {
-                // 먼저 localStorage에 저장 (빠른 응답)
-                const key = `reading-diary-${currentUser}`;
+                // 1. localStorage에 즉시 저장
                 localStorage.setItem(key, JSON.stringify(currentReports));
 
-                // Google Drive에도 저장 (백그라운드)
-                if (accessToken) {
+                // 2. Drive 저장 — 토큰 없으면 인증 먼저 완료 후 재시도
+                if (accessToken && gapiInited) {
                     await saveToGoogleDrive(currentReports);
+                } else {
+                    // 토큰 없을 때: 인증 완료 후 자동으로 Drive 저장하도록 큐
+                    window._pendingSave = true;
+                    pendingUser = currentUser;
+                    requestDriveAuth();
                 }
             } catch (error) {
                 console.error('Save error:', error);
-                // localStorage 저장은 성공했으므로 계속 진행
             }
         }
 
         async function loadData() {
+            const key = `reading-diary-${currentUser}`;
+
+            // 1. localStorage 먼저 읽기 (즉시 UI 표시용)
+            let localData = [];
             try {
-                // Google Drive에서 먼저 로드 시도
-                if (accessToken) {
+                const raw = localStorage.getItem(key);
+                localData = raw ? JSON.parse(raw) : [];
+            } catch (e) { localData = []; }
+
+            // 2. Drive 인증 & 로드 시도
+            if (accessToken && gapiInited) {
+                try {
                     const driveData = await loadFromGoogleDrive();
-                    if (driveData) {
-                        currentReports = driveData;
-                        // localStorage도 업데이트
-                        const key = `reading-diary-${currentUser}`;
+                    if (driveData && driveData.length > 0) {
+                        // 3. 머지: 로컬 + Drive → 합산 후 중복 제거
+                        currentReports = mergeReports(localData, driveData);
+                        // 4. 머지 결과를 다시 양쪽에 저장
                         localStorage.setItem(key, JSON.stringify(currentReports));
+                        await saveToGoogleDrive(currentReports);
+                        console.log(`✅ Drive 동기화 완료: ${currentReports.length}권`);
                         return;
                     }
+                } catch (e) {
+                    console.warn('Drive 로드 실패, localStorage 사용:', e);
                 }
-
-                // Google Drive 실패 시 localStorage에서 로드
-                const key = `reading-diary-${currentUser}`;
-                const data = localStorage.getItem(key);
-                currentReports = data ? JSON.parse(data) : [];
-            } catch (error) {
-                console.error('Load error:', error);
-                // localStorage에서 로드
-                const key = `reading-diary-${currentUser}`;
-                const data = localStorage.getItem(key);
-                currentReports = data ? JSON.parse(data) : [];
             }
+
+            // Drive 못 쓰면 로컬 데이터 사용
+            currentReports = localData;
         }
 
         function handleAuthError(error) {
@@ -1540,9 +1585,29 @@
                 document.getElementById('statsUserName').textContent = userName;
             }
 
-            // 새 글 작성 시 입력 필드 초기화
+            // 새 글 작성 시 draft 확인 → 있으면 복구 물어봄
             if (page === 'newReport') {
-                clearFormFields();
+                const draft = loadDraft();
+                if (draft && (draft.bookTitle || draft.oneLiner ||
+                    Object.values(draft.templateFields || {}).some(v => v && v.length > 0))) {
+                    const savedTime = draft.savedAt ? new Date(draft.savedAt).toLocaleString('ko-KR') : '';
+                    if (confirm(`이전에 작성 중이던 내용이 있어요!\n(${savedTime})\n\n이어서 작성할까요?\n[확인] 이어쓰기 / [취소] 새로 시작`)) {
+                        clearFormFields();
+                        restoreDraftToForm(draft);
+                    } else {
+                        clearDraft();
+                        clearFormFields();
+                    }
+                } else {
+                    clearFormFields();
+                }
+                // 자동 저장 바인딩 (한 번만)
+                if (!window._autoSaveBound) {
+                    bindAutoSave();
+                    window._autoSaveBound = true;
+                }
+                // 미리보기 자동 갱신 (섹션이 항상 보이니까)
+                setTimeout(() => generatePreview(), 200);
             }
 
             if (page === 'dashboard') updateDashboard();
@@ -1551,53 +1616,49 @@
         }
 
         function clearFormFields() {
-            // 기본 정보
-            document.getElementById('bookTitle').value = '';
-            document.getElementById('author').value = '';
-            document.getElementById('bookGenre').value = '';
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+            const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-            // 독서 기간
-            document.getElementById('readingStartDate').value = '';
-            document.getElementById('readingEndDate').value = '';
-            document.getElementById('readingDays').textContent = '날짜를 선택해주세요';
+            setVal('bookTitle', '');
+            setVal('bookAuthor', '');
+            setVal('bookPublisher', '');
+            setVal('bookGenre', '');
 
-            // 독후감 작성
-            document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+            setVal('readingStartDate', '');
+            setVal('readingEndDate', '');
+            setText('readingDays', '날짜를 선택해주세요');
 
-            // 템플릿 필드들
-            const templateFields = document.querySelectorAll('[id^="field-"]');
-            templateFields.forEach(field => {
+            setVal('reportDate', new Date().toISOString().split('T')[0]);
+
+            // 템플릿 필드 초기화
+            document.querySelectorAll('[id^="field-"]').forEach(field => {
                 if (field.tagName === 'TEXTAREA' || field.tagName === 'INPUT') {
-                    if (field.type === 'hidden') {
-                        field.value = '';
-                    } else {
-                        field.value = '';
-                    }
+                    field.value = '';
                 }
             });
 
-            // 별점 & 한줄평
-            document.getElementById('rating').value = '0';
-            document.getElementById('oneLiner').value = '';
-            document.getElementById('charCount').textContent = '0';
+            setVal('rating', '0');
+            setVal('oneLiner', '');
+            setText('charCount', '0');
             document.querySelectorAll('.star').forEach(star => star.classList.remove('active'));
-            document.getElementById('ratingEmoji').textContent = '🙂';
-            document.getElementById('ratingText').textContent = '별점을 선택해주세요';
+            setText('ratingEmoji', '🙂');
+            setText('ratingText', '별점을 선택해주세요');
 
-            // 장르 버튼 초기화
             document.querySelectorAll('.genre-btn').forEach(btn => btn.classList.remove('selected'));
             selectedGenre = null;
 
-            // 템플릿 선택 초기화
             document.querySelectorAll('.template-card').forEach(card => card.classList.remove('selected'));
-            document.querySelectorAll('.template-card')[0].classList.add('selected');
-            document.getElementById('selectedTemplate').value = 'basic';
+            const firstCard = document.querySelectorAll('.template-card')[0];
+            if (firstCard) firstCard.classList.add('selected');
+            setVal('selectedTemplate', 'basic');
             selectedTemplate = 'basic';
 
-            // Step 초기화
-            currentStep = 1;
             renderTemplateFields();
-            updateStepIndicator();
+        }
+
+        // resetForm — 저장 후 호출되는 함수 (기존 코드 호환)
+        function resetForm() {
+            clearFormFields();
         }
 
         function showUserSelection() {
@@ -1623,26 +1684,39 @@
         async function selectUser(userId) {
             currentUser = userId;
 
-            // 먼저 localStorage로 즉시 대시보드 표시
+            // 1. localStorage 즉시 표시 (빠른 반응)
             const key = `reading-diary-${currentUser}`;
-            const localData = localStorage.getItem(key);
-            currentReports = localData ? JSON.parse(localData) : [];
+            try {
+                const raw = localStorage.getItem(key);
+                currentReports = raw ? JSON.parse(raw) : [];
+            } catch (e) { currentReports = []; }
 
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('dashboard').classList.add('active');
             document.querySelector('.nav-item').classList.add('active');
             updateDashboard();
 
-            // Google Drive 인증 → 완료되면 콜백에서 syncAfterAuth() 자동 호출
+            // 2. Drive 인증 + 동기화 (백그라운드)
+            pendingUser = userId;
+            window._pendingSave = false;
+
             if (gisInited && gapiInited) {
-                pendingUser = userId;
                 if (accessToken) {
-                    syncAfterAuth();
+                    // 이미 토큰 있음 → 바로 동기화
+                    await syncAfterAuth();
                 } else {
+                    // 토큰 없음 → 인증 요청 (callback에서 syncAfterAuth 자동 호출)
                     requestDriveAuth();
                 }
             } else {
-                console.log('Google API 아직 로드 중 — localStorage만 사용');
+                // API 아직 로딩 중 → 최대 5초 대기 후 재시도
+                const waitAPI = setInterval(() => {
+                    if (gisInited && gapiInited) {
+                        clearInterval(waitAPI);
+                        requestDriveAuth();
+                    }
+                }, 300);
+                setTimeout(() => clearInterval(waitAPI), 5000);
             }
         }
 
@@ -1696,55 +1770,168 @@
             document.getElementById('userAvatar').textContent = users[currentUser].avatar;
         }
 
-        // ===== 새 독후감 작성 =====
-        function nextStep() {
-            if (currentStep === 1) {
-                if (!document.getElementById('bookTitle').value || !document.getElementById('bookGenre').value) {
-                    alert('필수 항목을 입력해주세요');
-                    return;
+        // ===== 새 독후감 작성 (통합 스크롤 방식) =====
+        // ===== 자동 임시저장 시스템 =====
+        const DRAFT_KEY_PREFIX = 'reading-diary-draft-';
+        let autoSaveTimer = null;
+
+        function getDraftKey() {
+            return DRAFT_KEY_PREFIX + (currentUser || 'unknown');
+        }
+
+        function collectFormData() {
+            const data = {
+                bookTitle: document.getElementById('bookTitle')?.value || '',
+                bookAuthor: document.getElementById('bookAuthor')?.value || '',
+                bookPublisher: document.getElementById('bookPublisher')?.value || '',
+                bookGenre: document.getElementById('bookGenre')?.value || '',
+                readingStartDate: document.getElementById('readingStartDate')?.value || '',
+                readingEndDate: document.getElementById('readingEndDate')?.value || '',
+                reportDate: document.getElementById('reportDate')?.value || '',
+                selectedTemplate: document.getElementById('selectedTemplate')?.value || 'basic',
+                rating: document.getElementById('rating')?.value || '0',
+                oneLiner: document.getElementById('oneLiner')?.value || '',
+                templateFields: {},
+                savedAt: Date.now()
+            };
+            // 템플릿 필드도 수집
+            document.querySelectorAll('#templateFields input, #templateFields textarea, #templateFields select').forEach(el => {
+                if (el.id) data.templateFields[el.id] = el.value;
+            });
+            // 이모지 선택 필드
+            document.querySelectorAll('#templateFields .emoji-btn.selected').forEach(btn => {
+                const parentId = btn.closest('[data-field-id]')?.getAttribute('data-field-id');
+                if (parentId) data.templateFields[parentId] = btn.getAttribute('data-emoji') || '';
+            });
+            return data;
+        }
+
+        function saveDraft() {
+            if (!currentUser) return;
+            try {
+                const data = collectFormData();
+                // 내용이 아예 없으면 저장 안 함
+                const hasContent = data.bookTitle || data.oneLiner ||
+                    Object.values(data.templateFields).some(v => v && v.length > 0);
+                if (!hasContent) return;
+                localStorage.setItem(getDraftKey(), JSON.stringify(data));
+                showAutoSaveIndicator();
+            } catch (e) {
+                console.warn('draft save 실패:', e);
+            }
+        }
+
+        function showAutoSaveIndicator() {
+            const el = document.getElementById('autoSaveIndicator');
+            if (!el) return;
+            el.classList.add('show');
+            clearTimeout(el._hideTimer);
+            el._hideTimer = setTimeout(() => el.classList.remove('show'), 1500);
+        }
+
+        function loadDraft() {
+            if (!currentUser) return null;
+            try {
+                const raw = localStorage.getItem(getDraftKey());
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function clearDraft() {
+            if (!currentUser) return;
+            localStorage.removeItem(getDraftKey());
+        }
+
+        function restoreDraftToForm(draft) {
+            if (!draft) return;
+            if (draft.bookTitle) document.getElementById('bookTitle').value = draft.bookTitle;
+            if (draft.bookAuthor) document.getElementById('bookAuthor').value = draft.bookAuthor;
+            if (draft.bookPublisher) document.getElementById('bookPublisher').value = draft.bookPublisher;
+            if (draft.bookGenre) {
+                document.getElementById('bookGenre').value = draft.bookGenre;
+                selectedGenre = draft.bookGenre;
+                // 해당 장르 버튼 selected 표시
+                document.querySelectorAll('.genre-btn').forEach(btn => {
+                    if (btn.textContent.includes(draft.bookGenre.split('/')[0])) {
+                        btn.classList.add('selected');
+                    }
+                });
+            }
+            if (draft.readingStartDate) document.getElementById('readingStartDate').value = draft.readingStartDate;
+            if (draft.readingEndDate) document.getElementById('readingEndDate').value = draft.readingEndDate;
+            if (draft.reportDate) document.getElementById('reportDate').value = draft.reportDate;
+
+            if (draft.selectedTemplate) {
+                document.getElementById('selectedTemplate').value = draft.selectedTemplate;
+                selectedTemplate = draft.selectedTemplate;
+                document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+                const idx = ['basic','emotion','exploration','creative','mini'].indexOf(draft.selectedTemplate);
+                if (idx >= 0) {
+                    const cards = document.querySelectorAll('.template-card');
+                    if (cards[idx]) cards[idx].classList.add('selected');
                 }
-            }
-
-            if (currentStep === 5) {
-                saveReport();
-                return;
-            }
-
-            currentStep++;
-
-            if (currentStep === 3) {
                 renderTemplateFields();
+                // 템플릿 필드 복구
+                setTimeout(() => {
+                    Object.keys(draft.templateFields || {}).forEach(fid => {
+                        const el = document.getElementById(fid);
+                        if (el) el.value = draft.templateFields[fid];
+                    });
+                }, 100);
             }
 
-            updateStepUI();
-        }
-
-        function previousStep() {
-            if (currentStep > 1) {
-                currentStep--;
-                updateStepUI();
+            if (draft.rating) {
+                setRating(parseInt(draft.rating, 10));
             }
+            if (draft.oneLiner) {
+                document.getElementById('oneLiner').value = draft.oneLiner;
+                const cc = document.getElementById('charCount');
+                if (cc) cc.textContent = draft.oneLiner.length;
+            }
+            calculateReadingDays();
         }
 
-        function updateStepUI() {
-            document.querySelectorAll('.step-indicator ~ .step').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.step-indicator ~ .step').forEach(s => {
-                if (s.getAttribute('data-step') === String(currentStep)) s.classList.add('active');
-            });
-
-            document.querySelectorAll('.step-dot').forEach((dot, i) => {
-                const stepNum = i + 1;
-                dot.classList.remove('active', 'completed');
-                if (stepNum === currentStep) dot.classList.add('active');
-                if (stepNum < currentStep) dot.classList.add('completed');
-            });
-
-            document.getElementById('prevBtn').style.display = currentStep > 1 ? 'block' : 'none';
-            document.getElementById('nextBtn').textContent = currentStep === 5 ? '저장하기' : '다음';
-
-            if (currentStep === 2) calculateReadingDays();
-            if (currentStep === 5) generatePreview();
+        // 입력 감지 → 1초 후 자동 저장 (디바운싱)
+        function triggerAutoSave() {
+            if (autoSaveTimer) clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => saveDraft(), 1000);
         }
+
+        function bindAutoSave() {
+            const form = document.getElementById('newReport');
+            if (!form) return;
+            form.addEventListener('input', triggerAutoSave);
+            form.addEventListener('change', triggerAutoSave);
+            form.addEventListener('click', (e) => {
+                if (e.target.matches('.genre-btn, .template-card, .star, .emoji-btn')) {
+                    triggerAutoSave();
+                }
+            });
+        }
+
+        // 작성 취소 (draft 버리기)
+        function discardDraft() {
+            if (!confirm('작성 중인 내용을 모두 지울까요?\n(저장된 임시 데이터도 삭제됩니다)')) return;
+            clearDraft();
+            resetForm();
+            showPage('dashboard');
+        }
+
+        // 페이지 이탈 경고
+        window.addEventListener('beforeunload', (e) => {
+            const draft = loadDraft();
+            if (draft && (draft.bookTitle || draft.oneLiner)) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        // 기존 nextStep/previousStep은 유지하되 내부 로직 없앰 (호환용)
+        function nextStep() { /* deprecated - 통합 스크롤 방식 */ }
+        function previousStep() { /* deprecated */ }
+        function updateStepUI() { /* deprecated */ }
 
         function selectGenre(btn, genre) {
             document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('selected'));
@@ -1850,8 +2037,22 @@
         }
 
         function saveReport() {
+            // 필수 항목 검증
+            const title = document.getElementById('bookTitle').value.trim();
+            if (!title) {
+                alert('책 제목을 입력해주세요');
+                document.getElementById('bookTitle').focus();
+                document.getElementById('bookTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            if (!selectedGenre) {
+                alert('도서 장르를 선택해주세요');
+                document.querySelector('.genre-btn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
             if (!selectedRating) {
                 alert('별점을 선택해주세요');
+                document.getElementById('ratingStars')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
 
@@ -1882,17 +2083,21 @@
 
             currentReports.push(report);
             saveData();
+            clearDraft(); // 💾 저장 성공 → 임시저장 삭제
             showConfetti();
 
             setTimeout(() => {
-                currentStep = 1;
                 selectedRating = 0;
                 selectedTemplate = 'basic';
                 selectedGenre = '';
-                document.querySelector('#newReport form')?.reset?.();
-                updateStepUI();
+                clearFormFields();
                 updateDashboard();
-                showPage('dashboard');
+                // 대시보드로 돌아갈 때 nav-item active 갱신
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById('dashboard').classList.add('active');
+                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+                const firstNav = document.querySelector('.nav-item');
+                if (firstNav) firstNav.classList.add('active');
             }, 1500);
         }
 
