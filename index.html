@@ -1326,6 +1326,7 @@
         let selectedGenre = '';
         let selectedTemplate = 'basic';
         let selectedRating = 0;
+        let editingReportId = null; // 수정 중인 독후감 ID (null이면 새 작성)
 
         const users = {
             jaena: { name: '김재나', avatar: '👧' },
@@ -1587,6 +1588,10 @@
 
             // 새 글 작성 시 draft 확인 → 있으면 복구 물어봄
             if (page === 'newReport') {
+                // 수정 모드 중이었다면 초기화 (네비바 "작성" 메뉴로 진입한 경우)
+                if (editingReportId) {
+                    resetEditMode();
+                }
                 const draft = loadDraft();
                 if (draft && (draft.bookTitle || draft.oneLiner ||
                     Object.values(draft.templateFields || {}).some(v => v && v.length > 0))) {
@@ -1911,8 +1916,17 @@
             });
         }
 
-        // 작성 취소 (draft 버리기)
+        // 작성/수정 취소
         function discardDraft() {
+            if (editingReportId) {
+                // 수정 모드 취소 → 상세 페이지로 복귀
+                if (!confirm('수정을 취소할까요? 변경사항은 저장되지 않아요.')) return;
+                const id = editingReportId;
+                resetEditMode();
+                clearFormFields();
+                showReportDetail(id);
+                return;
+            }
             if (!confirm('작성 중인 내용을 모두 지울까요?\n(저장된 임시 데이터도 삭제됩니다)')) return;
             clearDraft();
             resetForm();
@@ -2062,42 +2076,80 @@
                 reportContent[f.id] = document.getElementById(`field-${f.id}`)?.value || '';
             });
 
-            const report = {
-                id: Date.now().toString(),
-                userId: currentUser,
-                bookTitle: document.getElementById('bookTitle').value,
-                author: document.getElementById('bookAuthor').value,
-                publisher: document.getElementById('bookPublisher').value,
-                genre: selectedGenre,
-                readingStartDate: document.getElementById('readingStartDate').value,
-                readingEndDate: document.getElementById('readingEndDate').value,
-                reportDate: document.getElementById('reportDate').value || new Date().toISOString().split('T')[0],
-                templateType: selectedTemplate,
-                reportContent: reportContent,
-                rating: selectedRating,
-                oneLiner: document.getElementById('oneLiner').value,
-                isFavorite: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
+            const now = new Date().toISOString();
+            const isEdit = !!editingReportId;
 
-            currentReports.push(report);
+            if (isEdit) {
+                // 수정 모드: 기존 데이터 업데이트
+                const idx = currentReports.findIndex(r => r.id === editingReportId);
+                if (idx === -1) {
+                    alert('수정할 독후감을 찾을 수 없어요');
+                    return;
+                }
+                const existing = currentReports[idx];
+                currentReports[idx] = {
+                    ...existing,
+                    bookTitle: document.getElementById('bookTitle').value,
+                    author: document.getElementById('bookAuthor').value,
+                    publisher: document.getElementById('bookPublisher').value,
+                    genre: selectedGenre,
+                    readingStartDate: document.getElementById('readingStartDate').value,
+                    readingEndDate: document.getElementById('readingEndDate').value,
+                    reportDate: document.getElementById('reportDate').value || existing.reportDate,
+                    templateType: selectedTemplate,
+                    reportContent: reportContent,
+                    rating: selectedRating,
+                    oneLiner: document.getElementById('oneLiner').value,
+                    updatedAt: now
+                };
+            } else {
+                // 새 작성 모드
+                const report = {
+                    id: Date.now().toString(),
+                    userId: currentUser,
+                    bookTitle: document.getElementById('bookTitle').value,
+                    author: document.getElementById('bookAuthor').value,
+                    publisher: document.getElementById('bookPublisher').value,
+                    genre: selectedGenre,
+                    readingStartDate: document.getElementById('readingStartDate').value,
+                    readingEndDate: document.getElementById('readingEndDate').value,
+                    reportDate: document.getElementById('reportDate').value || new Date().toISOString().split('T')[0],
+                    templateType: selectedTemplate,
+                    reportContent: reportContent,
+                    rating: selectedRating,
+                    oneLiner: document.getElementById('oneLiner').value,
+                    isFavorite: false,
+                    createdAt: now,
+                    updatedAt: now
+                };
+                currentReports.push(report);
+            }
+
             saveData();
-            clearDraft(); // 💾 저장 성공 → 임시저장 삭제
+            clearDraft();
             showConfetti();
 
+            const savedEditId = editingReportId; // 수정 모드면 상세 페이지로 돌아가기 위해
             setTimeout(() => {
                 selectedRating = 0;
                 selectedTemplate = 'basic';
                 selectedGenre = '';
                 clearFormFields();
+                resetEditMode();
                 updateDashboard();
-                // 대시보드로 돌아갈 때 nav-item active 갱신
+                updateLibrary();
+
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                document.getElementById('dashboard').classList.add('active');
-                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-                const firstNav = document.querySelector('.nav-item');
-                if (firstNav) firstNav.classList.add('active');
+                if (isEdit && savedEditId) {
+                    // 수정 완료 → 해당 독후감 상세 보기로
+                    showReportDetail(savedEditId);
+                } else {
+                    // 새 작성 → 대시보드
+                    document.getElementById('dashboard').classList.add('active');
+                    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+                    const firstNav = document.querySelector('.nav-item');
+                    if (firstNav) firstNav.classList.add('active');
+                }
             }, 1500);
         }
 
@@ -2165,6 +2217,7 @@
                 <h3 style="margin-top: 30px; margin-bottom: 15px;">독후감</h3>
                 ${fields}
                 <div class="action-buttons">
+                    <button class="btn btn-primary btn-small" onclick="editReport('${id}')">✏️ 수정</button>
                     <button class="btn btn-primary btn-small" onclick="printReport('${id}')">🖨️ 프린트</button>
                     <button class="btn btn-primary btn-small" onclick="downloadPDF('${id}')">📄 PDF</button>
                     <button class="btn btn-danger btn-small" onclick="deleteReport('${id}')">🗑️ 삭제</button>
@@ -2442,6 +2495,88 @@
                 showPage('library');
                 updateLibrary();
             }
+        }
+
+        // ===== 독후감 수정 =====
+        function editReport(id) {
+            const report = currentReports.find(r => r.id === id);
+            if (!report) { alert('독후감을 찾을 수 없어요'); return; }
+
+            // 수정 모드 진입
+            editingReportId = id;
+
+            // 작성 페이지로 이동 (draft 팝업 우회를 위해 직접 이동)
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('newReport').classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+            // 페이지 제목 변경
+            const h1 = document.querySelector('#newReport h1');
+            if (h1) h1.textContent = '✏️ 독후감 수정';
+
+            // 저장 버튼 라벨 변경
+            const saveBtn = document.getElementById('saveBtn');
+            if (saveBtn) saveBtn.textContent = '💾 수정 완료';
+            const discardBtn = document.getElementById('discardBtn');
+            if (discardBtn) discardBtn.textContent = '❌ 수정 취소';
+
+            // 폼에 기존 데이터 채우기
+            clearFormFields();
+            setTimeout(() => {
+                document.getElementById('bookTitle').value = report.bookTitle || '';
+                document.getElementById('bookAuthor').value = report.author || '';
+                document.getElementById('bookPublisher').value = report.publisher || '';
+                document.getElementById('bookGenre').value = report.genre || '';
+                selectedGenre = report.genre;
+                // 장르 버튼 하이라이트
+                document.querySelectorAll('.genre-btn').forEach(btn => {
+                    if (btn.getAttribute('onclick')?.includes(report.genre)) {
+                        btn.classList.add('selected');
+                    }
+                });
+
+                document.getElementById('readingStartDate').value = report.readingStartDate || '';
+                document.getElementById('readingEndDate').value = report.readingEndDate || '';
+                document.getElementById('reportDate').value = report.reportDate || '';
+                calculateReadingDays();
+
+                // 템플릿 선택
+                selectedTemplate = report.templateType || 'basic';
+                document.getElementById('selectedTemplate').value = selectedTemplate;
+                document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+                const tpIdx = ['basic','emotion','exploration','creative','mini'].indexOf(selectedTemplate);
+                const cards = document.querySelectorAll('.template-card');
+                if (cards[tpIdx]) cards[tpIdx].classList.add('selected');
+                renderTemplateFields();
+
+                // 템플릿 필드 값 채우기
+                setTimeout(() => {
+                    Object.keys(report.reportContent || {}).forEach(fid => {
+                        const el = document.getElementById(`field-${fid}`);
+                        if (el) el.value = report.reportContent[fid];
+                    });
+                }, 100);
+
+                // 별점
+                setRating(report.rating || 0);
+
+                // 한줄평
+                document.getElementById('oneLiner').value = report.oneLiner || '';
+                const cc = document.getElementById('charCount');
+                if (cc) cc.textContent = (report.oneLiner || '').length;
+
+                window.scrollTo(0, 0);
+            }, 50);
+        }
+
+        function resetEditMode() {
+            editingReportId = null;
+            const h1 = document.querySelector('#newReport h1');
+            if (h1) h1.textContent = '✍️ 새 독후감 작성';
+            const saveBtn = document.getElementById('saveBtn');
+            if (saveBtn) saveBtn.textContent = '💾 저장하기';
+            const discardBtn = document.getElementById('discardBtn');
+            if (discardBtn) discardBtn.textContent = '🗑️ 작성 취소';
         }
 
         // ===== 검색 =====
