@@ -1470,13 +1470,19 @@
             if (accessToken && gapiInited) {
                 try {
                     const driveData = await loadFromGoogleDrive();
+
                     if (driveData && driveData.length > 0) {
-                        // 3. 머지: 로컬 + Drive → 합산 후 중복 제거
+                        // Drive에 데이터 있음 → 로컬과 머지
                         currentReports = mergeReports(localData, driveData);
-                        // 4. 머지 결과를 다시 양쪽에 저장
                         localStorage.setItem(key, JSON.stringify(currentReports));
                         await saveToGoogleDrive(currentReports);
-                        console.log(`✅ Drive 동기화 완료: ${currentReports.length}권`);
+                        console.log(`✅ Drive 동기화 완료: ${currentReports.length}권 (머지)`);
+                        return;
+                    } else if (localData.length > 0) {
+                        // Drive에 데이터 없지만 로컬에 있음 → Drive에 업로드
+                        currentReports = localData;
+                        await saveToGoogleDrive(currentReports);
+                        console.log(`✅ Drive에 로컬 데이터 업로드 완료: ${currentReports.length}권`);
                         return;
                     }
                 } catch (e) {
@@ -1638,7 +1644,7 @@
                     window._autoSaveBound = true;
                 }
                 // 미리보기 자동 갱신 (섹션이 항상 보이니까)
-                setTimeout(() => generatePreview(), 200);
+                // 미리보기 섹션 삭제됨 — 호출 불필요
             }
 
             if (page === 'dashboard') updateDashboard();
@@ -2055,25 +2061,7 @@
         }
 
         function generatePreview() {
-            const template = templates[selectedTemplate];
-            const fields = template.fields.map(f => {
-                const value = document.getElementById(`field-${f.id}`)?.value || '';
-                return `<div class="report-section"><div class="section-title">${f.label}</div><div>${value}</div></div>`;
-            }).join('');
-
-            const html = `
-                <div class="detail-header">
-                    <div class="detail-title">${document.getElementById('bookTitle').value}</div>
-                    <div class="detail-meta">
-                        <span>글쓴이: ${document.getElementById('bookAuthor').value || '-'}</span>
-                        <span>장르: ${selectedGenre}</span>
-                    </div>
-                </div>
-                <div class="rating-display">⭐ ${selectedRating}/${5}</div>
-                <div style="color: #666; margin: 10px 0;">한줄평: ${document.getElementById('oneLiner').value}</div>
-                ${fields}
-            `;
-            document.getElementById('previewContainer').innerHTML = html;
+            // 미리보기 섹션 삭제됨 — 호환용 빈 함수
         }
 
         function saveReport() {
