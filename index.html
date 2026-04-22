@@ -1241,13 +1241,12 @@
                         }
                     },
                     error_callback: (err) => {
-                        console.warn('Google 인증 실패 — 팝업으로 재시도:', err);
-                        // prompt: 'none' 실패 → 팝업으로 다시 시도
+                        console.warn('Google 인증 조용한 시도 실패:', err);
+                        // popup_failed_to_open이면 무시
                         if (err && err.type === 'popup_failed_to_open') return;
-                        // 조용한 갱신 실패했으면 사용자에게 팝업으로 재요청
-                        if (tokenClient) {
-                            tokenClient.requestAccessToken({ prompt: '' });
-                        }
+                        // prompt: 'none' 실패 → 팝업으로 재시도 (새 인스턴스)
+                        console.log('🔑 팝업으로 인증 재시도...');
+                        requestDriveAuthWithPopup();
                     }
                 });
                 gisInited = true;
@@ -1283,9 +1282,36 @@
             }
 
             // 3단계: 조용히 갱신 시도 (prompt: 'none')
-            // 실패하면 error_callback에서 자동으로 팝업 띄움
+            // 실패하면 error_callback에서 팝업 방식으로 재시도
             console.log('🔄 토큰 조용히 갱신 시도 중...');
             tokenClient.requestAccessToken({ prompt: 'none' });
+        }
+
+        // 팝업 방식 인증 (새 tokenClient 인스턴스로)
+        function requestDriveAuthWithPopup() {
+            try {
+                const popupClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.access_token) {
+                            accessToken = tokenResponse.access_token;
+                            gapi.client.setToken({ access_token: accessToken });
+                            saveTokenToStorage(accessToken);
+                            console.log('✅ 팝업 인증 성공 (토큰 저장됨)');
+                            if (pendingUser) {
+                                syncAfterAuth();
+                            }
+                        }
+                    },
+                    error_callback: (err) => {
+                        console.warn('팝업 인증도 실패 — localStorage만 사용:', err);
+                    }
+                });
+                popupClient.requestAccessToken({ prompt: '' });
+            } catch (e) {
+                console.error('팝업 인증 시도 실패:', e);
+            }
         }
 
         // 인증 후 데이터 동기화
